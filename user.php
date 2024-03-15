@@ -3,8 +3,6 @@ require 'dbconnection.php';
 $db = new db();
 session_start();
 
-
-
 if(isset($_POST['submit_order'])) {
     $_SESSION['cart'] = $_POST['product_id']; 
     $_SESSION['notes'] = $_POST['notes'];
@@ -155,7 +153,7 @@ if(isset($_POST['add_to_cart'])){
                     </div>
                 </div>
             </div>
-            <div class="col-sm-12 col-md-6 col-lg-4 mt-5 pt-5">
+            <div class="col-sm-12 col-md-8 col-lg-4 mt-5 pt-5">
                 <div class="cart-section">
                     <div class="cart d-flex flex-column justify-content-around flex-wrap ">
                         <h1 class="text-center">check out cart</h1>
@@ -167,9 +165,10 @@ if(isset($_POST['add_to_cart'])){
                             foreach($_SESSION['cart'] as $key => $item){
                                 echo '<div class="card cart-card d-flex justify-content-around flex-row  gap-1 align-items-center mb-2">';
                                 echo '    <div class="cart-img d-flex flex-column align-items-center  m-2 ">';
+                                echo '      <input type= "hidden" value='.$_SESSION['id'].'/>';
                                 echo '       <input type="hidden" name="product_id[]" value="' . $item['product_id'] . '">';
-                                echo '       <input type="hidden" name="productr_name[]" value="' . $item['product_name'] . '">';
-                                echo'          <span class="text-center" >'.$item['product_name'].'</span>';
+                                echo '       <input type="hidden" name="product_name[]" value="' . $item['product_name'] . '">';
+                                echo '          <span class="text-center" >'.$item['product_name'].'</span>';
                                 echo '        <img src="img/' . $item['product_image'] . '" alt="' . $item['product_name'] . '">';
                                 echo '    </div>';
                                 echo '    <div class="cart-quantity d-flex gap-1">';
@@ -200,13 +199,26 @@ if(isset($_POST['add_to_cart'])){
                         </div>
                         <div class="cart-room mb-2">
                             <span class="fw-bolder">Room</span>
-                            <select name="room_selection" class="m-3">
-                                <option value="0"> No Room</option>
-                                <option value="1">Room 1</option>
-                                <option value="2">Room 2</option>
-                                <option value="3">Room 3</option>
-                                <option value="4">Room 4</option>
-                            </select>
+                            <?php
+                            $room_query = " SELECT  * FROM rooms";
+                            $room_results = $db->get_connection()->query($room_query);
+                            if ($room_results->num_rows > 0) {
+                                echo '<select name="room_selection" class="m-3">';
+                                
+                                while ($room_row = $room_results->fetch_assoc()) {
+                                    $room_number = $room_row['room_number'];
+                                    $ext_number = $room_row['ext_number'];
+                                    echo '<option value="' . $room_number . ',' . $ext_number . '">' . $room_number . ' - Ext: ' . $ext_number . '</option>';
+                                }
+                            
+                                echo '</select>';
+                                
+                            } else {
+                                echo '<p>No rooms found</p>';
+                            }
+                           
+                            ?>
+                           
                         </div>
                         <div class="cart-total-price mb-2">
                             <h3>Total Price: $<span id="total-price" name="total_price"><?php echo $totalPrice; ?></span></h3>

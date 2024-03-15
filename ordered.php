@@ -2,55 +2,84 @@
 session_start();
 require 'dbconnection.php';
 $db = new db();
+echo '<pre>';
+var_dump($_POST);
+echo '</pre>';
+if(($_POST['users'])){
+    if(isset($_POST['submit_order']) && !empty($_SESSION['cart'])) {
+        $orderData = [
+            'quantity' => $_POST['quantity'],
+            'product_name' => $_POST['product_name'],
+            'notes' => htmlspecialchars($_POST['notes']),
+            'room_selection' => $_POST['room_selection'],
+            'user_id' => intval($_POST['users']), 
+        ];
 
-if(isset($_POST['submit_order']) && !empty($_SESSION['cart'])) {
-    $orderData = [
-        'quantity' => $_POST['quantity'],
-        'product_name' => $_POST['product_name'],
-        'notes' => $_POST['notes'],
-        'room_selection' => $_POST['room_selection'],
-    ];
+        $room_value = explode(",", $orderData['room_selection']);
+        $orderData['room_number'] = $room_value[0];
+        $orderData['ext_number'] = $room_value[1];
 
-    // Insert into orders
-    $user_id = 8;
-    $ext_number = 1;
-    var_dump($orderData['notes']);
-
-    $query = "INSERT INTO orders (user_id, notes, room_number, ext_number) VALUES (?, ?, ?, ?)";
-    $stmt = $db->get_connection()->prepare($query);
-    $stmt->bind_param("isii", $user_id, $orderData['notes'], $orderData['room_selection'], $ext_number);
-    $stmt->execute();
-    $order_id = $stmt->insert_id;
-
-    foreach($_SESSION['cart'] as $product) {
-        $db->insert_data('orderdetails', ['product_id', 'order_id', 'quantity'], [$product['product_id'], $order_id, $product['quantity']]);
-    }
-
-    // Clear the cart   
-    $_SESSION['cart'] = [];
-
-    // header('Location: user.php');
-    exit(); 
-}
-?>
-<!-- 
-        $query = "INSERT INTO orders (user_id, notes, room_number, ext_number) VALUES (?, ?, ?, ?)";
-        $stmt = mysqli_prepare($db->get_connection(), $query);
-        mysqli_stmt_bind_param($stmt, "isii", $user_id, $notes, $roomSelection, $ext_number);
-        mysqli_stmt_execute($stmt);
-        $order_id = mysqli_insert_id($db->get_connection());
-        var_dump($order_id);
         var_dump($orderData);
-        foreach($cart as $product) {
-            $product_id = $product['product_id'];
-            $quantity = $product['quantity'];
-            $db->insert_data('orderdetails', ['product_id', 'order_id', 'quantity'], [$product_id, $order_id, $quantity]);
+
+        $query = "INSERT INTO orders (user_id, notes, room_number, ext_number) VALUES (?, ?, ?, ?)";
+        $stmt = $db->get_connection()->prepare($query);
+        $stmt->bind_param("isii", $orderData['user_id'], $orderData['notes'], $orderData['room_number'], $orderData['ext_number']);
+        $stmt->execute();
+        $order_id = $stmt->insert_id;
+
+        foreach($_SESSION['cart'] as $product) {
+            $db->insert_data('orderdetails', ['product_id', 'order_id', 'quantity'], [$product['product_id'], $order_id, $product['quantity']]);
         }
 
-        // Clear the cart   
         $_SESSION['cart'] = [];
-        header('Location: user.php');
-        exit(); // Ensure script stops after redirection
-    }  
+         $user_role = $_SESSION['role'];
+        $user_role = 'admin';
+        if($user_role == 'user') {
+            header('Location: user.php');
+        } else if($user_role == 'admin') {
+            header('Location: admin.php');
+        }
+        exit();
+    }
+
+} else { 
+    if(isset($_POST['submit_order']) && !empty($_SESSION['cart'])) {
+        $orderData = [
+            'quantity' => $_POST['quantity'],
+            'product_name' => $_POST['product_name'],
+            'notes' => htmlspecialchars($_POST['notes']),
+            'room_selection' => $_POST['room_selection'],
+        ];
+
+        $room_value = explode(",", $orderData['room_selection']);
+        $orderData['room_number'] = $room_value[0];
+        $orderData['ext_number'] = $room_value[1];
+
+        $user_id = $_SESSION['id']; 
+        $user_role = $_SESSION['role'];
+
+        var_dump($user_role);
+
+        $query = "INSERT INTO orders (user_id, notes, room_number, ext_number) VALUES (?, ?, ?, ?)";
+        $stmt = $db->get_connection()->prepare($query);
+        $stmt->bind_param("isii", $user_id, $orderData['notes'], $orderData['room_number'], $orderData['ext_number']);
+        $stmt->execute();
+        $order_id = $stmt->insert_id;
+
+        foreach($_SESSION['cart'] as $product) {
+            $db->insert_data('orderdetails', ['product_id', 'order_id', 'quantity'], [$product['product_id'], $order_id, $product['quantity']]);
+        }
+
+        $_SESSION['cart'] = [];
+
+        if($user_role == 'user') {
+            header('Location: user.php');
+        } else if($user_role == 'admin') {
+            header('Location: admin.php');
+        }
+        exit();
+    }
 }
-?> -->
+?>
+
+
